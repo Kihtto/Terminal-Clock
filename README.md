@@ -1,2 +1,2 @@
 # Terminal-Clock
-A simple terminal clock build in python
+A simple terminal clock build in python with blessed
