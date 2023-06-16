@@ -1,5 +1,6 @@
 from blessed import Terminal
 import time 
+from datetime import timedelta
 
 numbers = [
   [" 000 ", "0   0", "0   0", "0   0", " 000 "],
@@ -22,39 +23,71 @@ colon = [
   " ",
 ]
 
-def print_centered(text):
-    #x = term.width // 2 - 44 // 2
-    #y = term.height // 2
-    #with term.location(x, y):
-    line_work = ''
-    clock = []
-    for line in range(5):
-      for character in text:
-        if character == ":":
-          line_work = line_work + "  " + colon[line] + " "
-        else:
-          line_work = line_work + " " + numbers[int(character)][line]
-      clock.append(line_work)
-      line_work = ''
-    for line in range(5):
-      x = term.width // 2 - 44 // 2
-      y = term.height // 2 - 5 + line
-      with term.location(x,y):
-        print(term.orangered_on_black + clock[line])
+def print_center(line, clock):
+  x = term.width // 2 - 44 // 2
+  y = term.height // 2 - 3 + line
+  with term.location(x,y):
+    print(term.orangered_on_black + clock[line])
 
-def print_menu():
+def print_clock(text):
+  line_work = ''
+  clock = []
+  for line in range(5):
+    for character in text:
+      if character == ":":
+        line_work = line_work + "  " + colon[line] + " "
+      else:
+        line_work = line_work + " " + numbers[int(character)][line]
+    clock.append(line_work)
+    line_work = ''
+  for line in range(5):
+    print_center(line, clock)
+
+def print_temp(key, init_time, actual_time, pause):
+  if pause == False:
+    delta_time = actual_time - init_time
+    print_clock('0' +str(timedelta(seconds=delta_time)).split(sep='.')[0])
+  else:
+    print_clock('00:00:00')
+  if key == "\n":
+    if pause:
+      init_time = time.time()
+    pause = not pause
+  return init_time, pause
+
+def print_cron(key):
+  print_clock('00:00:00')
+
+def print_menu(resaltado):
   text = "Cron.  Temp.  Reloj"
   x = term.width // 2 - len(text) // 2
   y = 0
   with term.location(x,y):
-    print(text[:-5] + term.black_on_orangered + text[-5:])
+    if resaltado == 1:
+      print(term.black_on_orangered + text[0:5] + term.orangered_on_black + text[5:])
+    elif resaltado == 2:
+      print(text[:7] + term.black_on_orangered + text[7:12] + term.orangered_on_black + text[12:])
+    elif resaltado == 3:
+      print(text[:-5] + term.black_on_orangered + text[-5:])
 
 
 term = Terminal()
 with term.cbreak(), term.hidden_cursor():
-  close_terminal = ''
-  while close_terminal.lower() != 'q':
-    close_terminal = term.inkey(timeout=0.2)
+  key = ''
+  resaltado = 3
+  init_time = ''
+  pause = True
+  while key.lower() != 'q':
+    key = term.inkey(timeout=0.2)
+    if key == "\x1b[C" and resaltado < 3:
+      resaltado +=1
+    elif key == "\x1b[D" and resaltado > 1:
+      resaltado -=1
     print(term.home + term.orangered_on_black +term.clear)
-    print_centered(time.strftime("%H:%M:%S"))
-    print_menu()
+    if resaltado == 3:
+      print_clock(time.strftime("%H:%M:%S"))
+    elif resaltado == 2:
+      init_time, pause = print_temp(key, init_time, time.time(), pause)
+    elif resaltado == 1:
+      print_cron(key)
+    print_menu(resaltado)
